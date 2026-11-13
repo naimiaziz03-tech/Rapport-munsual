@@ -15,21 +15,21 @@ const $=id=>document.getElementById(id);
 const iso=v=>/^\d{4}-\d\d-\d\d$/.test(v)?v.split('-').reverse().join('/'):v;
 Object.keys(S.h).forEach(k=>S.h[k]=iso(S.h[k]));S.r.forEach(r=>r[0]=iso(r[0]));
 const mask=v=>{v=v.replace(/\D/g,'').slice(0,8);return v.length>4?v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4):v.length>2?v.slice(0,2)+'/'+v.slice(2):v};
-function inp(t,val,at){const x=t=='date'?'type="text" inputmode="numeric" maxlength="10" placeholder="jj/mm/aaaa" class="dt"':t=='tk'?'type="text" inputmode="numeric" class="tk"':`type="${t}" step="any" inputmode="decimal"`;const i=`<input ${x} ${at} value="${val??''}">`;return t=='date'?`<span class="dw">${i}<button type="button" class="cal" tabindex="-1">📅</button><input type="date" class="hd" tabindex="-1"></span>`:i}
-function cal(){document.querySelectorAll('.dw').forEach(w=>{const t=w.querySelector('.dt'),h=w.querySelector('.hd'),b=w.querySelector('.cal');b.onclick=()=>{try{h.showPicker()}catch(e){h.click()}};h.onchange=()=>{if(!h.value)return;t.value=h.value.split('-').reverse().join('/');t.dispatchEvent(new Event('input'));h.value=''}})}
-function wire(i,get){i.oninput=()=>{let v=i.value;if(i.classList.contains('dt'))v=i.value=mask(v);else if(i.classList.contains('tk'))v=i.value=v.replace(/[^\d\/]/g,'');else if(i.type=='number')v=v!==''?+v:'';get(v);sv();sum()}}
+const dm2iso=v=>{const m=String(v||'').match(/^(\d\d)\/(\d\d)\/(\d{4})$/);return m?m[3]+'-'+m[2]+'-'+m[1]:''};
+function inp(t,val,at){if(t=='date')return `<input type="date" class="dt" ${at} value="${dm2iso(val)}">`;const x=t=='tk'?'type="text" inputmode="numeric" class="tk"':`type="${t}" step="any" inputmode="decimal"`;return `<input ${x} ${at} value="${val??''}">`}
+function wire(i,get){i.oninput=()=>{let v=i.value;if(i.classList.contains('dt'))v=i.value?i.value.split('-').reverse().join('/'):'';else if(i.classList.contains('tk'))v=i.value=v.replace(/[^\d\/]/g,'');else if(i.type=='number')v=v!==''?+v:'';get(v);sv();sum()}}
 function build(){const fld=([k,l,t])=>`<div><label>${l}</label>${inp(t,S.h[k],`data-h="${k}"`)}</div>`;
 let h='<div class="card"><details><summary>▼ معلومات المركبة</summary><div class="g" style="margin-top:8px">';
 HF.filter(x=>x[0]!='A5'&&x[0]!='M2').forEach(x=>h+=fld(x));
-h+='</div></details></div><div class="card"><h2>استهلاك الوقود (7 أسطر كحد أقصى)</h2><div id="rows"></div><div class="bar"><button class="s" id="ar">+ إضافة سطر</button></div><div class="sum" id="sm"></div></div><button id="rs" class="s">إعادة ضبط للقيم الأصلية</button>';
+h+='</div></details></div><div class="card"><h2>استهلاك الوقود (7 أسطر كحد أقصى)</h2><div id="rows"></div><div class="bar"><button class="s" id="ar">+ إضافة سطر</button></div><div class="sum" id="sm"></div></div><button id="nw" class="s">ملف جديد</button>';
 h+='<div class="card" style="max-width:220px;margin-top:12px">'+fld(HF.find(x=>x[0]=='M2'))+'</div>';
 $('in').innerHTML=h;rows();
 document.querySelectorAll('[data-h]').forEach(i=>wire(i,v=>S.h[i.dataset.h]=v));
-$('ar').onclick=()=>{if(S.r.length>=7)return alert('الحد الأقصى 7 أسطر');const p=S.r[S.r.length-1]||[];S.r.push(['',p[1]||'',p[2]||'',p[3]||'','',p[6]||'','','',p[8]||'']);sv();rows()};$('rs').onclick=()=>{if(confirm('إعادة الضبط؟')){S={h:{...D0},r:R0.map(r=>[...r])};Object.keys(S.h).forEach(k=>S.h[k]=iso(S.h[k]));S.r.forEach(r=>r[0]=iso(r[0]));sv();build()}}}
+$('ar').onclick=()=>{if(S.r.length>=7)return alert('الحد الأقصى 7 أسطر');const p=S.r[S.r.length-1]||[];S.r.push(['',p[1]||'',p[2]||'',p[3]||'','',p[6]||'','','',p[8]||'']);sv();rows()};$('nw').onclick=()=>{if(confirm('بدء ملف جديد؟ سيتم إفراغ الواجهة فقط (أسطر الوقود وتاريخ التحرير) وتبقى معلومات المركبة المخفية')){const f=S.r[0]||[];S.r=[['','',f[2]||'',f[3]||'TOTAL','','','','','']];S.h.M2='';sv();build()}}}
 function rows(){let h='';S.r.forEach((r,i)=>{h+='<div class="row"><div class="g">';FC.forEach(([l,t],j)=>{if(j==2||j==3)return;const ty=j==4?'tk':t;h+=`<div><label>${l}</label>${inp(ty,r[j],`data-r="${i}" data-c="${j}"`)}</div>`});h+=`</div><button class="s" data-d="${i}" style="margin-top:6px">حذف</button></div>`});
 $('rows').innerHTML=h;
 document.querySelectorAll('[data-r]').forEach(i=>wire(i,v=>S.r[i.dataset.r][i.dataset.c]=v));
-document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{S.r.splice(b.dataset.d,1);sv();rows()});sum();cal()}
+document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{S.r.splice(b.dataset.d,1);sv();rows()});sum()}
 const n=v=>v===''||v==null||isNaN(+v)?null:+v;
 function calc(){const rs=S.r.map(r=>{const d=n(r[6])!=null&&n(r[5])!=null?r[6]-r[5]:null,q=n(r[7]),p=n(r[8]);return{d,m:q!=null&&p!=null?q*p:null,c:d&&q!=null?q*100/d:null}});
 const T=k=>rs.reduce((a,x)=>a+(x[k]||0),0),q=S.r.reduce((a,r)=>a+(n(r[7])||0),0);
@@ -59,4 +59,5 @@ x=x.replace(/(<f[^>]*>[^<]*<\/f>|<f[^>]*\/>)<v>[^<]*<\/v>/g,'$1');z.file('xl/wor
 let w=await z.file('xl/workbook.xml').async('string');w=/<calcPr[^>]*\/>/.test(w)?w.replace(/<calcPr[^>]*\/>/,'<calcPr calcId="191029" fullCalcOnLoad="1"/>'):w.replace('<extLst','<calcPr calcId="191029" fullCalcOnLoad="1"/><extLst');z.file('xl/workbook.xml',w);
 z.remove('xl/calcChain.xml');for(const [p,re] of [['xl/_rels/workbook.xml.rels',/<Relationship [^>]*calcChain[^>]*\/>/],['[Content_Types].xml',/<Override [^>]*calcChain[^>]*\/>/]]){z.file(p,(await z.file(p).async('string')).replace(re,''))}
 dl(await z.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'TO448_-_10-2026_rempli.xlsx')};
+window.addEventListener('pagehide',sv);document.addEventListener('visibilitychange',sv);
 build();
